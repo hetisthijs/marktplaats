@@ -1,0 +1,102 @@
+<html>
+<head>
+    <title>Marktplaats gratis aangeboden</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <script src="https://code.jquery.com/jquery-3.2.1.min.js"></script>
+    <link rel="stylesheet" href="justifiedGallery.min.css" />
+    <script src="jquery.justifiedGallery.min.js"></script>
+    <style>
+        * { margin:0; padding:0; }
+        body {
+            font-family:Arial, Verdana, Tahoma, sans-serif;
+        }
+        .caption {
+            display:initial !important;
+            opacity: 0.7;
+        }
+        .head {
+            padding: 5px;
+            border-bottom: 3px solid grey;
+        }
+        .head h3 {
+            display: inline;
+        }
+        .head .filter {
+            float: right;
+        }
+        .loading {
+            text-align:center;
+            font-weight:bold;
+            font-size:1.5em;
+            margin-top:10px;
+        }
+        @media (max-width: 1100px) {
+            .head .filter {
+                float: none;
+                padding-top: 5px;
+                font-size: small;
+            }
+        }
+    </style>
+    <script>
+        $(document).ready(function() {
+            onPageLoad();
+        });
+
+        function onPageLoad() {
+            $(".imagelist").html("<div class='loading'>Bezig met laden...</div>");
+
+            $.getJSON( "getFreeAds.php", function(data) {
+                let items = [];
+                let hide = [280, 1860, 1848]; //tegels, stenen, aarde
+                let count = 0;
+                $.each(data, function(key, val) {
+                    if(count >= 500) {
+                        return false;
+                    }
+                    if($("#locatie").val() && !$("#locatie").val().includes(val.city)) { //filter is set
+                        return true; //continue;
+                    }
+                    if($("#categorie").val() && $("#categorie").val() != val.categoryId) {
+                        hide.splice($.inArray(val.categoryId, hide), 1); //unhide
+                        return true; //continue;
+                    }
+
+                    if (val.picture && val.title) { //valid ad
+                        if ($.inArray(val.categoryId, hide) == -1) { //not in $hide
+                            items.push("<a target='_blank' href='https://www.marktplaats.nl/" + val.urn + "' title='" + val.title + " | " + val.city + "'><img src='" + val.picture + "'></a>");
+                            count++;
+                        }
+                    }
+
+                    // fill categories
+                    if(val.categories) {
+                        $.each(val.categories, function(key, val) {
+                            $('#categorie').append("<option value='" + val.id + "'>" + val.name + " (" + val.count + ")</option>");
+                        });
+                    }
+                });
+
+                $(".imagelist").html(items.join( "" ));
+                $('.imagelist').justifiedGallery({
+                    rowHeight : 200,
+                    lastRow : 'nojustify',
+                    margins : 3
+                });
+
+            });
+        }
+    </script>
+</head>
+
+<body>
+    <div class="head">
+        <h3>Gratis af te halen op <span style="color:#EEA566">Marktplaats</span></h3>
+        <div class="filter">
+            Categorie: <select id="categorie" onchange="onPageLoad()"><option selected="selected"></option></select>&nbsp;&nbsp;
+            Plaats: <input type="text" id="locatie" name="locatie" size="15" /> <button onclick="onPageLoad()">Verzenden</button>
+        </div>
+    </div>
+    <ul class="imagelist"></ul>
+</body>
+</html>
